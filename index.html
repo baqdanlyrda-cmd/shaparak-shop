@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>چاپ شاپرک | فروشگاه نمونه‌طرح</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#0d0d10;--card:#17171c;--gold:#d7ad55;--text:#fff;--muted:#a9a9b2}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#0a0a0c,#17130b);color:var(--text);font-family:Tahoma,Arial,sans-serif}
+.wrap{max-width:720px;margin:auto;padding:18px 14px 90px}.brand{text-align:center;padding:18px 0 10px}
+.brand h1{margin:0;font-size:28px}.brand p{color:var(--gold);margin:8px 0}
+.search{width:100%;padding:13px 15px;border-radius:14px;border:1px solid #292930;background:#111116;color:#fff;outline:0;margin:10px 0 18px}
+h2{font-size:19px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cat,.product{background:var(--card);border:1px solid #292930;border-radius:18px;padding:16px;text-align:center;box-shadow:0 8px 25px #0004}
+.cat{min-height:100px;display:flex;flex-direction:column;justify-content:center}.icon{font-size:30px}.cat b{margin-top:8px}
+.product img{width:100%;aspect-ratio:1.35;object-fit:cover;border-radius:12px;background:#25252b}.product h3{font-size:16px;margin:10px 0 5px}.price{color:var(--gold);font-weight:bold;margin-bottom:10px}
+button{border:0;border-radius:12px;padding:11px 14px;font-weight:bold;cursor:pointer}.add{background:var(--gold);color:#17120a;width:100%}
+.back{background:#292930;color:#fff;margin-bottom:12px}.cart{position:fixed;bottom:15px;left:14px;right:14px;max-width:692px;margin:auto;background:var(--gold);color:#17120a;padding:14px;border-radius:16px;font-weight:bold;text-align:center}
+.empty{padding:35px;text-align:center;color:var(--muted);background:var(--card);border-radius:18px}
+.small{color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><h1>چاپ شاپرک</h1><p>فروشگاه نمونه‌طرح</p></div>
+  <input id="search" class="search" placeholder="جستجوی طرح..." oninput="render()">
+  <div id="app"></div>
+</div>
+<div id="cartBar" class="cart" onclick="checkout()">🛒 سبد سفارش: <span id="count">۰</span> مورد</div>
+<script>
+const tg = window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();}
+
+const cats=[
+ ['cards','🎨','کارت ویزیت'],['flyer','📄','تراکت'],['banner','🪧','بنر و پوستر'],
+ ['label','🏷️','لیبل و استیکر'],['logo','✨','لوگو'],['invitation','💌','دعوتنامه'],
+ ['tshirt','👕','چاپ روی لباس'],['frame','🖼️','قاب و محصولات هدیه']
+];
+
+const products=[
+ {id:'card-01',cat:'cards',name:'کارت ویزیت لوکس',price:0,img:'',desc:'نمونه طرح کارت ویزیت'},
+ {id:'flyer-01',cat:'flyer',name:'تراکت تبلیغاتی',price:0,img:'',desc:'نمونه طرح تراکت'},
+ {id:'banner-01',cat:'banner',name:'بنر تبلیغاتی',price:0,img:'',desc:'نمونه طرح بنر'},
+ {id:'label-01',cat:'label',name:'لیبل اختصاصی',price:0,img:'',desc:'نمونه طرح لیبل'}
+];
+
+let cart=[];
+
+function money(n){return n?new Intl.NumberFormat('fa-IR').format(n)+' تومان':'قیمت تماس'}
+function render(){
+ const q=document.getElementById('search').value.trim().toLowerCase();
+ const app=document.getElementById('app');
+ if(!window.currentCat){
+   let cs=cats.filter(x=>(x[2]+' '+x[1]).toLowerCase().includes(q));
+   app.innerHTML='<h2>دسته‌بندی‌ها</h2><div class="grid">'+cs.map(x=>`<div class="cat" onclick="openCat('${x[0]}')"><div class="icon">${x[1]}</div><b>${x[2]}</b></div>`).join('')+'</div>';
+ }else{
+   const cat=cats.find(x=>x[0]===window.currentCat);
+   let ps=products.filter(p=>p.cat===window.currentCat && (p.name+' '+p.desc).toLowerCase().includes(q));
+   app.innerHTML=`<button class="back" onclick="goHome()">← بازگشت</button><h2>${cat[1]} ${cat[2]}</h2>`+
+   (ps.length?'<div class="grid">'+ps.map(p=>`<div class="product">${p.img?`<img src="${p.img}">`:'<div class="empty">تصویر نمونه‌طرح<br><span class="small">بعداً از پنل اضافه می‌شود</span></div>'}<h3>${p.name}</h3><div class="price">${money(p.price)}</div><button class="add" onclick="add('${p.id}')">🛒 افزودن به سفارش</button></div>`).join('')+'</div>':'<div class="empty">هنوز طرحی در این دسته قرار نگرفته است.</div>');
+ }
+ updateCart();
+}
+function openCat(c){window.currentCat=c;document.getElementById('search').value='';render()}
+function goHome(){window.currentCat=null;render()}
+function add(id){let p=products.find(x=>x.id===id);let item=cart.find(x=>x.id===id);if(item)item.qty++;else cart.push({id:p.id,name:p.name,qty:1});updateCart(); if(tg?.HapticFeedback)tg.HapticFeedback.notificationOccurred('success')}
+function updateCart(){document.getElementById('count').textContent=new Intl.NumberFormat('fa-IR').format(cart.reduce((s,x)=>s+x.qty,0))}
+function checkout(){
+ if(!cart.length){alert('سبد سفارش خالی است.');return}
+ const order={type:'new_order',shop:'چاپ شاپرک',items:cart,user:tg?.initDataUnsafe?.user||null};
+ if(tg?.sendData){tg.sendData(JSON.stringify(order));}
+ else alert('برای ثبت سفارش، این صفحه باید از داخل ربات تلگرام باز شود.');
+}
+render();
+</script>
+</body>
+</html>
